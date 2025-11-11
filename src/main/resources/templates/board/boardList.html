@@ -3,6 +3,19 @@
                 xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
                 layout:decorate="~{layouts/basicLayout}">
 
+<script th:inline="javascript">
+    function changePageSize(selectElement) {
+        var newPageSize = selectElement.value;
+
+        var url = /*[[@{/board/boardList}]]*/ '/board/boardList';
+        var params = new URLSearchParams();
+        params.append('pageSize', newPageSize);
+        params.append('pag', '0');
+
+        location.href = url + '?' + params.toString();
+    }
+</script>
+
 <div layout:fragment="content" class="text-center">
     <h2>게시판 리스트</h2>
     <div class="row mt-3 mb-1">
@@ -10,13 +23,13 @@
             <a th:href="@{boardInput}" class="btn btn-success btn-sm">글쓰기</a>
         </div>
         <div class="col text-end">
-            <select name="pageSize" id="pageSize" onclick="pageSizeCheck()">
-                <option>5</option>
-                <option>10</option>
-                <option>15</option>
-                <option>20</option>
-                <option>25</option>
-                <option>30</option>
+            <select name="pageSize" id="pageSize" onchange="pageSizeCheck(this)">
+                <option value="5"  th:selected="${pageSize == 5}">5</option>
+                <option value="10" th:selected="${pageSize == 10}">10</option>
+                <option value="15" th:selected="${pageSize == 15}">15</option>
+                <option value="20" th:selected="${pageSize == 20}">20</option>
+                <option value="25" th:selected="${pageSize == 25}">25</option>
+                <option value="30" th:selected="${pageSize == 30}">30</option>
             </select>
         </div>
     </div>
@@ -30,7 +43,9 @@
         </tr>
         <th:block th:each="board, st : ${boardList}">
             <tr>
-                <td>[[${st.count}]]</td>
+                <td th:text="${(pageData.totalElements - (pag * pageSize)) - st.index}">
+                    [[${st.count}]]
+                </td>
                 <td>
                     [[${board.title}]]
                 </td>
@@ -44,18 +59,30 @@
     </table>
 
     <!-- 블록페이지 시작 -->
-   <!-- <div class="text-center">
+    <div class="text-center">
         <ul class="pagination justify-content-center">
-            <th:block th:if="${pag > 1}"><li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize},pag=0)}">첫페이지</a></li></th:block>
-            <th:block th:if="${curBlock > 0}"><li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize},pag=${(curBlock-1)*blockSize+1-1})}">이전블록</a></li></th:block>
-            <th:block th:each="i: ${#numbers.sequence((curBlock*blockSize)+1,(curBlock*blockSize)+blockSize)}">
-                <th:block th:if="${i <= totPage && i == pag}"><li class="page-item active"><a class="page-link bg-secondary border-secondary" th:href="@{boardList(pageSize=${pageSize},pag=${i-1})}" th:text="${i}"></a></li></th:block>
-                <th:block th:if="${i <= totPage && i != pag}"><li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize},pag=${i-1})}" th:text="${i}"></a></li></th:block>
+            <th:block th:if="${pag > 0}">
+                <li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize}, pag=0)}">첫페이지</a></li>
             </th:block>
-            <th:block th:if="${curBlock < lastBlock}"><li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize},pag=${(curBlock+1)*blockSize+1-1})}">다음블록</a></li></th:block>
-            <th:block th:if="${pag < totPage}"><li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize},pag=${totPage-1})}">마지막페이지</a></li></th:block>
+            <th:block th:if="${curBlock > 0}">
+                <li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize}, pag=${(curBlock-1) * blockSize})}">이전블록</a></li>
+            </th:block>
+            <th:block th:each="i: ${#numbers.sequence((curBlock*blockSize)+1, (curBlock*blockSize)+blockSize)}">
+                <th:block th:if="${i <= totPage and i == pag + 1}">
+                    <li class="page-item active"><a class="page-link bg-secondary border-secondary" th:href="@{boardList(pageSize=${pageSize}, pag=${i-1})}" th:text="${i}"></a></li>
+                </th:block>
+                <th:block th:if="${i <= totPage and i != pag + 1}">
+                    <li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize}, pag=${i-1})}" th:text="${i}"></a></li>
+                </th:block>
+            </th:block>
+            <th:block th:if="${curBlock < lastBlock}">
+                <li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize}, pag=${(curBlock+1) * blockSize})}">다음블록</a></li>
+            </th:block>
+            <th:block th:if="${pag < totPage - 1 and totPage > 0}">
+                <li class="page-item"><a class="page-link text-secondary" th:href="@{boardList(pageSize=${pageSize}, pag=${totPage-1})}">마지막페이지</a></li>
+            </th:block>
         </ul>
-    </div>-->
+    </div>
     <!-- 블록페이지 끝 -->
 
 </div>
