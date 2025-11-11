@@ -18,30 +18,9 @@ public class BoardService {
 
     private final BoardRepository boardRepository;
 
-    private final JPAQueryFactory queryFactory;
-
-    private final QBoard board = QBoard.board;
-
 
     public Page<Board> getBoardList(Pageable pageable) {
-
-        List<Board> content = queryFactory
-                .selectFrom(board)
-                .orderBy(board.id.desc())
-                .offset(pageable.getOffset())
-                .limit(pageable.getPageSize())
-                .fetch();
-
-        Long total = queryFactory
-                .select(board.count())
-                .from(board)
-                .fetchOne();
-
-        if (total == null) {
-            total = 0L;
-        }
-
-        return new PageImpl<>(content, pageable, total);
+        return boardRepository.findAll(pageable);
     }
 
     public Board setBoardInput(Board board) {

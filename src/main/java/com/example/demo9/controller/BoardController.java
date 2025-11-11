@@ -33,28 +33,36 @@ public class BoardController {
 
     @GetMapping("/boardList")
     public String boardListGet(Model model,
-                               @RequestParam(name = "pag", defaultValue = "0", required = false) int pag,
+                               @RequestParam(name = "pag", defaultValue = "1", required = false) int pag,
                                @RequestParam(name = "pageSize", defaultValue = "5", required = false) int pageSize) {
 
-        Pageable pageable = PageRequest.of(pag, pageSize, Sort.by("id").descending());
+        Pageable pageable = PageRequest.of(Math.max(pag - 1, 0), pageSize, Sort.by("id").descending());
 
         Page<Board> pageData = boardService.getBoardList(pageable);
 
-        List<Board> boardList = pageData.getContent();
-        int totPage = pageData.getTotalPages();
+        model.addAttribute("paging", pageData);
 
         int blockSize = 5;
-        int curBlock = pag / blockSize;
+        int totalPages = pageData.getTotalPages();
+        int currentPage = pageData.getNumber();
+        int startBlockPage;
+        int endBlockPage;
 
-        int lastBlock = (totPage == 0) ? 0 : (int)(Math.ceil((double) totPage / blockSize)) -1;
+        if (totalPages == 0) {
+            startBlockPage = 1;
+            endBlockPage = 1;
+        } else {
+            startBlockPage = (currentPage / blockSize) * blockSize + 1;
 
-        model.addAttribute("boardList", boardList);
-        model.addAttribute("pag", pag);
-        model.addAttribute("pageSize", pageSize);
-        model.addAttribute("totPage", totPage);
-        model.addAttribute("blockSize", blockSize);
-        model.addAttribute("curBlock", curBlock);
-        model.addAttribute("lastBlock", lastBlock);
+            endBlockPage = Math.min(startBlockPage + blockSize - 1, totalPages);
+
+            if (endBlockPage > totalPages) {
+                endBlockPage = totalPages;
+            }
+        }
+
+        model.addAttribute("startBlockPage", startBlockPage);
+        model.addAttribute("endBlockPage", endBlockPage);
 
         return "board/boardList";
     }
