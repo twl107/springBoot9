@@ -5,15 +5,6 @@
 
 <th:block layout:fragment="script">
     <script th:inline="javascript">
-        'use strict'
-
-        let token;
-        let header;
-
-        $(document).ready(function() {
-            token = $("input[name='_csrf']").val();
-            header = $("input[name='_csrf_header']").attr("content");
-        });
 
         function replyCheck() {
             let content = $("#content").val();
@@ -29,10 +20,9 @@
             }
 
             $.ajax({
-                url : 'boardReplyInput',
+                url : '/board/boardReplyInput',
                 type : 'post',
                 data : query,
-                beforeSend: function(xhr) { xhr.setRequestHeader(header, token); },
                 success: (res) => {
                     if(res != 0) {
                         alert('댓글이 입력되었습니다.');
@@ -42,6 +32,29 @@
                 error : () => alert('전송오류')
             })
         }
+
+        function replyDeleteCheck(id) {
+            if (!confirm('댓글을 삭제하시겠습니까?')) {
+                return false;
+            }
+
+            $.ajax({
+                url: '/board/boardReplyDelete',
+                type: 'post',
+                data: { id : id },
+                success: (res) => {
+                    if (res != 0) {
+                        alert('댓글이 삭제되었습니다.');
+                        location.reload();
+                    } else {
+                        alert('댓글 삭제에 실패했습니다.');
+                    }
+                },
+                error: () => alert('전송 오류가 발생했습니다.')
+            });
+        }
+
+
     </script>
 </th:block>
 
@@ -124,9 +137,9 @@
     <th:block th:each="replyVO, st : ${replyVos}">
       <tr>
         <td>[[${replyVO.name}]]
-          <th:block th:if="${sMid == replyVO.name || sLevel == 0}">
+          <th:block th:if="${session.sName == replyVO.name || session.strLevel == '관리자'}">
             (<a th:href="|javascript:replyDeleteCheck(${replyVO.id})|" title="댓글삭제">x</a>)
-            <th:block th:if="${sMid == replyVO.name}">
+            <th:block th:if="${session.sName == replyVO.name}">
               (<a th:href="|javascript:replyUpdateCheck(${replyVO.id})|" title="댓글수정">√</a>)
             </th:block>
           </th:block>
@@ -177,8 +190,6 @@
         </td>
       </tr>
     </table>
-      <input type="hidden" name="_csrf" th:value="${_csrf.token}">
-      <input type="hidden" name="_csrf_header" th:content="${_csrf.headerName}">
   </form>
 
 </div>

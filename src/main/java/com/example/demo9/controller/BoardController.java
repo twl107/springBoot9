@@ -161,14 +161,5 @@ public class BoardController {
 
 
 
-    // 댓글 입력
-    /*@ResponseBody
-    @PostMapping("/boardReplyInput")
-    public int boardReplyInputPost(Long boardId, String name, String email, HttpServletRequest request) {
-        boardService.setBoardReplyInput(boardId, name, email, request.getRemoteAddr());
-
-        return 0;
-    }*/
-
 
 }

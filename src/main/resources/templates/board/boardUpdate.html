@@ -10,7 +10,7 @@
 <th:block layout:fragment="script">
     <script src="/ckeditor/ckeditor.js"></script>
     <script th:inline="javascript">
-        // AJAX 요청 시 CSRF 토큰을 자동으로 헤더에 추가 (CKEditor 이미지 업로드 포함)
+
         var token = $("meta[name='_csrf']").attr("content");
         var header = $("meta[name='_csrf_header']").attr("content");
         $(function() {
@@ -74,8 +74,9 @@
         <input type="submit" value="수정하기" class="btn btn-success me-2"/>
         <input type="button" value="돌아가기" onclick="goBackToList();" class="btn btn-info"/>
 
-        <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
 
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}">
+        <input type="hidden" name="_csrf_header" th:content="${_csrf.headerName}">
         <input type="hidden" name="pag" th:value="${pageVO.pag}" />
         <input type="hidden" name="pageSize" th:value="${pageVO.pageSize}" />
     </form>
