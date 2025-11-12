@@ -1,68 +1,48 @@
 package com.example.demo9.controller;
 
+import com.example.demo9.common.PageVO;
+import com.example.demo9.common.Pagination;
 import com.example.demo9.dto.BoardDto;
 import com.example.demo9.entity.Board;
+import com.example.demo9.entity.BoardReply;
 import com.example.demo9.entity.Member;
+import com.example.demo9.repository.BoardReplyRepository;
 import com.example.demo9.repository.BoardRepository;
+import com.example.demo9.repository.MemberRepository;
 import com.example.demo9.service.BoardService;
 import com.example.demo9.service.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/board")
 public class BoardController {
 
     private final BoardService boardService;
+    private final BoardRepository boardRepository;
+    private final BoardReplyRepository boardReplyRepository;
     private final MemberService memberService;
+    private final MemberRepository memberRepository;
+    private final Pagination pagination;
 
     @GetMapping("/boardList")
-    public String boardListGet(Model model,
-                               @RequestParam(name = "pag", defaultValue = "1", required = false) int pag,
-                               @RequestParam(name = "pageSize", defaultValue = "5", required = false) int pageSize) {
-
-        Pageable pageable = PageRequest.of(Math.max(pag - 1, 0), pageSize, Sort.by("id").descending());
-
-        Page<Board> pageData = boardService.getBoardList(pageable);
-
-        model.addAttribute("paging", pageData);
-
-        int blockSize = 5;
-        int totalPages = pageData.getTotalPages();
-        int currentPage = pageData.getNumber();
-        int startBlockPage;
-        int endBlockPage;
-
-        if (totalPages == 0) {
-            startBlockPage = 1;
-            endBlockPage = 1;
-        } else {
-            startBlockPage = (currentPage / blockSize) * blockSize + 1;
-
-            endBlockPage = Math.min(startBlockPage + blockSize - 1, totalPages);
-
-            if (endBlockPage > totalPages) {
-                endBlockPage = totalPages;
-            }
-        }
-
-        model.addAttribute("startBlockPage", startBlockPage);
-        model.addAttribute("endBlockPage", endBlockPage);
+    public String guestListGet(Model model, PageVO pageVO) {
+        pageVO.setSection("board");
+        pageVO = pagination.pagination(pageVO);
+        //model.addAttribute("boardList", pageVO.getBoardList());
+        model.addAttribute("pageVO", pageVO);
 
         return "board/boardList";
     }
@@ -73,7 +53,8 @@ public class BoardController {
     }
 
     @PostMapping("/boardInput")
-    public String boardInputPost(BoardDto dto, HttpServletRequest request, Authentication authentication,
+    public String boardInputPost(BoardDto dto, HttpServletRequest request,
+                                 Authentication authentication,
                                  Member member) {
         dto.setHostIp(request.getRemoteAddr());
         String email = authentication.getName();
@@ -86,7 +67,108 @@ public class BoardController {
         else return "redirect:/message/boardInputNo";
     }
 
+    @GetMapping("/boardContent")
+    public String boardContentGet(Model model, Long id, PageVO pageVO, HttpSession session) {
+        // 글 조회수 증가처리(중복방지)
+        List<String> contentNum = (List<String>) session.getAttribute("sDuplicate");
+        if(contentNum == null) contentNum = new ArrayList<>();
+        String imsiNum = "board" + id;
+        if(!contentNum.contains(imsiNum)) {
+            boardService.setBoardReadNumPlus(id);
+            contentNum.add(imsiNum);
+        }
+        session.setAttribute("sDuplicate", contentNum);
 
+        // 이전글/다음글 가져오기
+        Board preVO = boardService.getPreNextSearch(id, "pre");
+        Board nextVO = boardService.getPreNextSearch(id, "next");
+        model.addAttribute("preVO", preVO);
+        model.addAttribute("nextVO", nextVO);
+
+        // 원본글 가져오기
+        Board board = boardService.getBoardContent(id);
+        model.addAttribute("board", board);
+        model.addAttribute("pageVO", pageVO);
+
+        // 현재 게시글의 관련 댓글 가져오기
+        List<BoardReply> replyVos = boardService.getBoardReply(id);
+        System.out.println("replyVos : " + replyVos);
+        model.addAttribute("replyVos", replyVos);
+
+        model.addAttribute("newLine", System.lineSeparator());
+
+        return "board/boardContent";
+    }
+
+    // 댓글 입력
+    @ResponseBody
+    @PostMapping("/boardReplyInput")
+    public int boardReplyInputPost(HttpServletRequest request,
+                                   Authentication authentication,
+                                   @RequestParam Long boardId,
+                                   @RequestParam String name,
+                                   @RequestParam String content) {
+
+        Board board = boardRepository.findById(boardId).orElseThrow(()-> new IllegalStateException("원본글 없음"));
+        Member member = memberRepository.findByEmail(authentication.getName()).orElseThrow(()-> new IllegalStateException("회원 없음"));
+        BoardReply boardReply = BoardReply.builder()
+                .board(board)           // board테이블에서 boardId검색
+                .member(member)         // member테이블에서 email검색
+                .name(name)
+                .content(content)
+                .hostIp(request.getRemoteAddr())
+                .build();
+
+        boardReplyRepository.save(boardReply);
+        return 1;
+    }
+
+
+
+
+    @GetMapping("/boardUpdate")
+    public String boardUpdateGet(Long id, PageVO pageVO, Model model) {
+        Board board = boardService.getBoardContent(id);
+        model.addAttribute("board", board);
+        model.addAttribute("pageVO", pageVO);
+
+        return "board/boardUpdate";
+    }
+
+    @PostMapping("/boardUpdate")
+    public String boardUpdatePost(Long id, PageVO pageVO, BoardDto dto) {
+        try {
+            boardService.setBoardUpdate(id, dto);
+        }
+        catch (IllegalArgumentException e){
+            return "redirect:/message/boardUpdateNo?id="+id;
+        }
+        return "redirect:/message/boardUpdateOk?id="+id;
+    }
+
+    @GetMapping("/boardDelete")
+    public String boardDeleteGet(Long id) {
+        try {
+            boardService.getDeleteBoard(id);
+        }
+        catch (IllegalArgumentException e) {
+            return "redirect:/message/boardDeleteNo?id=" + id;
+        }
+        return "redirect:/message/boardDeleteOk";
+    }
+
+
+
+
+
+    // 댓글 입력
+    /*@ResponseBody
+    @PostMapping("/boardReplyInput")
+    public int boardReplyInputPost(Long boardId, String name, String email, HttpServletRequest request) {
+        boardService.setBoardReplyInput(boardId, name, email, request.getRemoteAddr());
+
+        return 0;
+    }*/
 
 
 }

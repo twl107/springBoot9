@@ -16,7 +16,7 @@ public class MessageController {
 	public String getMessage(Model model, HttpSession session, PageDto pageDto,
                              @PathVariable String msgFlag,
                              @RequestParam(name="mid", defaultValue = "", required = false) String mid,
-                             @RequestParam(name="idx", defaultValue = "0", required = false) int idx,
+                             @RequestParam(name="id", defaultValue = "0", required = false) int id,
                              @RequestParam(name="tempFlag", defaultValue = "", required = false) String tempFlag
                              //@RequestParam(name="pag", defaultValue = "1", required = false) int pag,
                              //@RequestParam(name="pageSize", defaultValue = "10", required = false) int pageSize
@@ -38,6 +38,23 @@ public class MessageController {
             model.addAttribute("message", "게시판에 글 등록 실패~~");
             model.addAttribute("url", "/board/boardInput");
         }
+        else if(msgFlag.equals("boardUpdateOk")) {
+            model.addAttribute("message", "게시글이 성공적으로 수정되었습니다.");
+            model.addAttribute("url", "/board/boardContent?id=" + id);
+        }
+        else if(msgFlag.equals("boardUpdateNo")) {
+            model.addAttribute("message", "게시글 수정 실패~~");
+            model.addAttribute("url", "/board/boardUpdate?id=" + id);
+        }
+        else if(msgFlag.equals("boardDeleteOk")) {
+            model.addAttribute("message", "게시글이 삭제되었습니다.");
+            model.addAttribute("url", "/board/boardList");
+        }
+        else if(msgFlag.equals("boardDeleteNo")) {
+            model.addAttribute("message", "게시글 삭제 실패~~");
+            model.addAttribute("url", "/board/boardContent?id="+id);
+        }
+
 
 		return "include/message";
 	}

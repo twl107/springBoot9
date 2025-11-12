@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/basicLayout}">
+
+<meta name="_csrf" th:content="${_csrf.token}"/>
+<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+<th:block layout:fragment="script">
+    <script src="/ckeditor/ckeditor.js"></script>
+    <script th:inline="javascript">
+        // AJAX 요청 시 CSRF 토큰을 자동으로 헤더에 추가 (CKEditor 이미지 업로드 포함)
+        var token = $("meta[name='_csrf']").attr("content");
+        var header = $("meta[name='_csrf_header']").attr("content");
+        $(function() {
+          $(document).ajaxSend(function(e, xhr, options) {
+            xhr.setRequestHeader(header, token);
+          });
+        });
+
+        // CKEditor 초기화
+        $(document).ready(function() {
+          CKEDITOR.replace("ckeditor", {
+            height: 460,
+            filebrowserUploadMethod: "form",
+            filebrowserUploadUrl: "/ckeditor/imageUpload",
+            uploadUrl : "/ckeditor/imageUpload"
+          });
+        });
+
+        // 수정 취소 또는 목록으로 돌아가기
+        function goBackToList() {
+          // pageVO 객체에서 현재 페이지 정보를 가져와 URL을 동적으로 생성
+          var pag = /*[[${pageVO.pag}]]*/ 1; // Thymeleaf 인라인 JS 사용
+          var pageSize = /*[[${pageVO.pageSize}]]*/ 10;
+          var search = /*[[${pageVO.search}]]*/ '';
+          var searchString = /*[[${pageVO.searchString}]]*/ '';
+
+          location.href = `/board/boardList?pag=${pag}&pageSize=${pageSize}&search=${search}&searchString=${searchString}`;
+        }
+
+    </script>
+</th:block>
+
+<div layout:fragment="content" class="container text-center" style="height:830px">
+    <h2>글 수정하기</h2>
+    <form method="post" enctype="multipart/form-data" th:action="@{boardUpdate}">
+        <input type="hidden" name="id" th:value="${board.id}" />
+
+        <table class="table table-bordered">
+            <tr>
+                <th>글쓴이</th>
+                <td><input type="text" name="name" id="name" th:value="${board.name}" readonly class="form-control"/></td>
+            </tr>
+            <tr>
+                <th>글제목</th>
+                <td><input type="text" name="title" class="form-control" th:value="${board.title}"/></td>
+            </tr>
+            <tr>
+                <th>글내용</th>
+                <td>
+                    <textarea name="content" id="ckeditor" rows="6" class="form-control" th:text="${board.content}"></textarea>
+                </td>
+            </tr>
+            <tr>
+                <th>공개여부</th>
+                <td>
+                    <input type="radio" name="openSw" id="openSw1" value="OK" th:checked="${board.openSw == 'OK'}" /> 공개 &nbsp;
+                    <input type="radio" name="openSw" id="openSw2" value="NO" th:checked="${board.openSw == 'NO'}" /> 비공개
+                </td>
+            </tr>
+        </table>
+        <input type="submit" value="수정하기" class="btn btn-success me-2"/>
+        <input type="button" value="돌아가기" onclick="goBackToList();" class="btn btn-info"/>
+
+        <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+
+        <input type="hidden" name="pag" th:value="${pageVO.pag}" />
+        <input type="hidden" name="pageSize" th:value="${pageVO.pageSize}" />
+    </form>
+</div>
+
+</html>
