@@ -3,12 +3,14 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/basicLayout}">
 
-<th:block layout:fragment="script">
-  <script th:inline="javascript">
-    let message = [[${message}]];
-    if(message != null) alert(message);
-  </script>
-</th:block>
+
+<!--<th:block layout:fragment="script">-->
+<!--  <script th:inline="javascript">-->
+<!--    let message = [[${message}]];-->
+<!--    if(message != null) alert(message);-->
+<!--  </script>-->
+<!--</th:block>-->
+
 
 <th:block>
   <style>

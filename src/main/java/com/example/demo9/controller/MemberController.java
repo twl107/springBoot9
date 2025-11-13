@@ -1,7 +1,10 @@
 package com.example.demo9.controller;
 
+import com.example.demo9.common.PageVO;
+import com.example.demo9.common.Pagination;
 import com.example.demo9.dto.MemberDto;
 import com.example.demo9.entity.Member;
+import com.example.demo9.repository.MemberRepository;
 import com.example.demo9.service.MemberService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -15,11 +18,10 @@ import org.springframework.security.web.authentication.logout.SecurityContextLog
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -28,6 +30,8 @@ import java.util.Optional;
 public class MemberController {
 
     private final MemberService memberService;
+    private final MemberRepository memberRepository;
+    private final Pagination pagination;
 
     @Autowired
     PasswordEncoder passwordEncoder;
@@ -43,8 +47,7 @@ public class MemberController {
     }
 
     @GetMapping("/memberLoginOk")
-    public String memberLoginOkGet(RedirectAttributes rttr,
-                                   HttpServletRequest request,
+    public String memberLoginOkGet(HttpServletRequest request,
                                    HttpServletResponse response,
                                    Authentication authentication,
                                    HttpSession session) {
@@ -66,32 +69,27 @@ public class MemberController {
         session.setAttribute("sName", opMember.get().getName());
         session.setAttribute("strLevel", strLevel);
 
-        rttr.addFlashAttribute("message", opMember.get().getName() + "님 로그인 되셨습니다.");
-
-        return "redirect:/member/memberMain";
+        return "redirect:/message/memberLoginOk";
     }
 
     @GetMapping("/login/error")
-    public String loginErrorGet (RedirectAttributes rttr) {
-        rttr.addFlashAttribute("loginErrorMsg", "아이디 또는 비밀번호가 일치하지 않습니다.");
-        return "redirect:/member/memberLogin";
+    public String loginErrorGet () {
+        return "redirect:/message/memberLoginNo";
     }
 
     @GetMapping("/memberLogout")
     public String memberLogoutGet(Authentication authentication,
                                   HttpServletRequest request,
                                   HttpServletResponse response,
-                                  HttpSession session,
-                                  RedirectAttributes rttr) {
+                                  HttpSession session) {
 
         if(authentication != null) {
             String name = session.getAttribute("sName").toString();
-            rttr.addFlashAttribute("message", name + "님 로그아웃 되었습니다.");
             session.invalidate();
             new SecurityContextLogoutHandler().logout(request, response, authentication);
         }
 
-        return "redirect:/member/memberLogin";
+        return "redirect:/message/memberLogout";
     }
 
     @GetMapping("/memberJoin")
@@ -101,8 +99,7 @@ public class MemberController {
     }
 
     @PostMapping("/memberJoin")
-    public String memberJoinPost(RedirectAttributes rttr,
-                                 @Valid MemberDto dto,
+    public String memberJoinPost(@Valid MemberDto dto,
                                  BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             return "member/memberJoin";
@@ -111,11 +108,9 @@ public class MemberController {
             try {
                 Member member = Member.dtoToEntity(dto, passwordEncoder);
                 Member memberRes = memberService.saveMember(member);
-                rttr.addFlashAttribute("message", "회원에 가입되었습니다.");
-                return "redirect:/member/memberLogin";
+                return "redirect:/message/memberJoinOk";
             } catch (IllegalStateException e) {
-                rttr.addFlashAttribute("message", "이미 가입된 회원입니다.");
-                return "redirect:/member/memberJoin";
+                return "redirect:/message/memberJoinNo";
             }
         }
     }
@@ -125,6 +120,49 @@ public class MemberController {
         return "member/memberMain";
     }
 
+    @GetMapping("/memberList")
+    public String memberListGet(Model model, PageVO pageVO) {
+        pageVO.setSection("member");
+        pageVO = pagination.pagination(pageVO);
+        model.addAttribute("pageVO", pageVO);
+
+        return "member/memberList";
+    }
+
+    @GetMapping("/memberPwdCheck/{flag}")
+    public String memberPwdCheckGet(Model model, @PathVariable String flag) {
+        model.addAttribute("flag", flag);
+        return "member/memberPwdCheck";
+    }
+
+    @PostMapping("/memberPwdCheck")
+    @ResponseBody
+    public String memberPwdCheckPost(String email, String password) {
+        //Member member = memberService.getMemberIdCheck(id);
+        Optional<Member> member = memberService.getMemberEmailCheck(email);
+        if(member.isPresent() && passwordEncoder.matches(password, member.get().getPassword())) {
+            return "1";
+        }
+        return "0";
+    }
+
+    @PostMapping("/memberPwdChange")
+    public String memberPwdChangePost(String email, String password) {
+
+        Optional<Member> opMember = memberService.getMemberEmailCheck(email);
+
+        if(opMember.isPresent()) {
+            Member member = opMember.get();
+            String newPwd = passwordEncoder.encode(password);
+            member.setPassword(newPwd);
+
+            memberRepository.save(member);
+
+
+
+        }
+
+    }
 
 
 

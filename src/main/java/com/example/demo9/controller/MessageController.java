@@ -54,6 +54,27 @@ public class MessageController {
             model.addAttribute("message", "현 게시글에 댓글이 존재합니다.\n\n댓글을 먼저 삭제해 주세요.");
             model.addAttribute("url", "/board/boardContent?id="+id+"&pag="+pag);
         }
+        else if(msgFlag.equals("memberJoinOk")) {
+            model.addAttribute("message", "회원가입 되었습니다.");
+            model.addAttribute("url", "/member/memberLogin");
+        }
+        else if(msgFlag.equals("memberJoinNo")) {
+            model.addAttribute("message", "회원가입 실패~~");
+            model.addAttribute("url", "/member/memberJoin");
+        }
+        else if(msgFlag.equals("memberLogout")) {
+            model.addAttribute("message", "로그아웃 되었습니다.");
+            model.addAttribute("url", "/member/memberLogin");
+        }
+        else if(msgFlag.equals("memberLoginNo")) {
+            model.addAttribute("message", "아이디 또는 비밀번호를 다시 확인해주세요.");
+            model.addAttribute("url", "/member/memberLogin");
+        }
+        else if(msgFlag.equals("memberLoginOk")) {
+            String sName = (String) session.getAttribute("sName");
+            model.addAttribute("message", sName + "님 환영합니다.");
+            model.addAttribute("url", "/member/memberMain");
+        }
 
 
 		return "include/message";

@@ -1,7 +1,9 @@
 package com.example.demo9.common;
 
 import com.example.demo9.entity.Board;
+import com.example.demo9.entity.Member;
 import com.example.demo9.repository.BoardRepository;
+import com.example.demo9.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,6 +19,7 @@ import java.util.List;
 public class Pagination {
 
   private final BoardRepository boardRepository;
+  private final MemberRepository memberRepository;
 
   public PageVO pagination(PageVO pageVO) {	// 각각의 변수로 받으면 초기값처리를 spring이 자동할수 있으나, 객체로 받으면 개별 문자/객체 자료에는 null이 들어오기에 따로 초기화 작업처리해야함.
     int pag = pageVO.getPag();
@@ -54,10 +57,27 @@ public class Pagination {
       totPage = page.getTotalPages();
     }
 
+    else if(pageVO.getSection().equals("member")) {
+      Page<Member> page;
+
+      if (pageVO.getSearch() != null && !pageVO.getSearch().isEmpty()) {
+          if(pageVO.getSearch().equals("name")) page = memberRepository.findByNameContaining(pageVO.getSearchString(), pageable);
+          else page = memberRepository.findByEmailContaining(pageVO.getSearchString(), pageable);
+      }
+      else page = memberRepository.findAll(pageable);
+
+      List<Member> memberList = page.getContent();
+      pageVO.setMemberList(memberList);
+
+      totRecCnt = (int) page.getTotalElements();
+      totPage = page.getTotalPages();
+    }
+
+
     int startIndexNo = pag * pageSize;
-		int curScrStartNo = totRecCnt - startIndexNo;
+    int curScrStartNo = totRecCnt - startIndexNo;
 		
-		int blockSize = 3;
+    int blockSize = 3;
     int curBlock = ((pag + 1) - 1) / blockSize;
     int lastBlock = (totPage - 1) / blockSize;
 		pageVO.setPag(pag+1);
@@ -71,9 +91,15 @@ public class Pagination {
 		pageVO.setLastBlock(lastBlock);
 
 		if(pageVO.getSearch() != null) {
-			if(pageVO.getSearch().equals("title")) pageVO.setSearchStr("글제목");
-			else if(pageVO.getSearch().equals("name")) pageVO.setSearchStr("글쓴이");
-			else if(pageVO.getSearch().equals("content")) pageVO.setSearchStr("글내용");
+            if (pageVO.getSection().equals("board")) {
+                if (pageVO.getSearch().equals("title")) pageVO.setSearchStr("글제목");
+                else if (pageVO.getSearch().equals("name")) pageVO.setSearchStr("글쓴이");
+                else if (pageVO.getSearch().equals("content")) pageVO.setSearchStr("글내용");
+            }
+            else if (pageVO.getSection().equals("member")) {
+                if(pageVO.getSearch().equals("name")) pageVO.setSearchStr("성명");
+                else if (pageVO.getSearch().equals("email")) pageVO.setSearchStr("이메일");
+            }
 		}
 		pageVO.setSearch(pageVO.getSearch());
 		pageVO.setSearchString(pageVO.getSearchString());
