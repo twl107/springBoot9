@@ -16,9 +16,9 @@ public class MessageController {
 	public String getMessage(Model model, HttpSession session, PageDto pageDto,
                              @PathVariable String msgFlag,
                              @RequestParam(name="mid", defaultValue = "", required = false) String mid,
-                             @RequestParam(name="id", defaultValue = "0", required = false) int id,
-                             @RequestParam(name="tempFlag", defaultValue = "", required = false) String tempFlag
-                             //@RequestParam(name="pag", defaultValue = "1", required = false) int pag,
+                             @RequestParam(name="id", defaultValue = "0", required = false) Long id,
+                             @RequestParam(name="tempFlag", defaultValue = "", required = false) String tempFlag,
+                             @RequestParam(name="pag", defaultValue = "1", required = false) int pag
                              //@RequestParam(name="pageSize", defaultValue = "10", required = false) int pageSize
 		) {
 		
@@ -51,8 +51,8 @@ public class MessageController {
             model.addAttribute("url", "/board/boardList");
         }
         else if(msgFlag.equals("boardDeleteNo")) {
-            model.addAttribute("message", "게시글 삭제 실패~~");
-            model.addAttribute("url", "/board/boardContent?id="+id);
+            model.addAttribute("message", "현 게시글에 댓글이 존재합니다.\n\n댓글을 먼저 삭제해 주세요.");
+            model.addAttribute("url", "/board/boardContent?id="+id+"&pag="+pag);
         }
 
 

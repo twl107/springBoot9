@@ -26,6 +26,7 @@ public class PageVO {
 	
 	private int level;	// 회원 등급(초기값:99 - 비회원)
 
-  private List<Board> boardList;
-	
+  private List<Board> boardList;  // 게시판의 글 리스트를 저장하기위한 변수
+
+  private boolean isOwner;    // 본인 인증여부를 확인하기위한 변수
 }

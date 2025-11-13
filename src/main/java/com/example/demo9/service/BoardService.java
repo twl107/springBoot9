@@ -1,70 +1,110 @@
 package com.example.demo9.service;
 
-import com.example.demo9.dto.BoardDto;
 import com.example.demo9.entity.Board;
 import com.example.demo9.entity.BoardReply;
 import com.example.demo9.repository.BoardReplyRepository;
 import com.example.demo9.repository.BoardRepository;
-import jakarta.transaction.Transactional;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.io.File;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class BoardService {
 
-    private final BoardRepository boardRepository;
-    private final BoardReplyRepository boardReplyRepository;
+  private final BoardRepository boardRepository;
+  private final BoardReplyRepository boardReplyRepository;
 
 //  public List<Board> getBoardList() {
 //    return boardRepository.findAll();
 //  }
 
-    public Board setBoardInput(Board board) {
-        return boardRepository.save(board);
+  public Board setBoardInput(Board board) {
+    return boardRepository.save(board);
+  }
+
+  public Board getBoardContent(Long id) {
+    //return boardRepository.findById(id).get();
+    return boardRepository.findById(id).orElse(null);
+  }
+
+  public void setBoardReadNumPlus(Long id) {
+    boardRepository.setBoardReadNumPlus(id);
+  }
+
+  public Board getPreNextSearch(Long id, String preNext) {
+    if(preNext.equals("pre")) {
+      return boardRepository.findPrevious(id);
     }
-
-    public Board getBoardContent(Long id) {
-        //return boardRepository.findById(id).get();
-        return boardRepository.findById(id).orElse(null);
+    else {
+      return boardRepository.findNext(id);
     }
+  }
 
-    public void setBoardReadNumPlus(Long id) {
-        boardRepository.setBoardReadNumPlus(id);
+  public List<BoardReply> getBoardReply(Long boardId) {
+    return boardReplyRepository.findByBoardIdOrderById(boardId);
+  }
+
+  public void setBoardReplyInput(BoardReply boardReply) {
+    boardReplyRepository.save(boardReply);
+  }
+
+  public boolean setBoardImageDelete(String content, String realPath) {
+    //             0         1         2         3         4         5
+    //             012345678901234567890123456789012345678901234567890
+    // <img alt="" src="/ckeditorUpload/250916121142_4.jpg" style="height:402px; width:600px" />
+
+    int position = 21;
+    String nextImg = content.substring(content.indexOf("src=\"/") + position);
+    boolean sw = true, flag = false;
+
+    while(sw) {
+      String imgFile = nextImg.substring(0, nextImg.indexOf("\""));
+      String origFilePath = realPath + imgFile;
+
+      File delFile = new File(origFilePath);
+      if(delFile.exists()) delFile.delete();
+
+      if(nextImg.indexOf("src=\"/") == -1) sw = false;
+      else nextImg = nextImg.substring(nextImg.indexOf("src=\"/") + position);
+
+      flag = true;
     }
+    return flag;
+  }
 
-    public Board getPreNextSearch(Long id, String preNext) {
-        if(preNext.equals("pre")) {
-            return boardRepository.findPrevious(id);
-        }
-        else {
-            return boardRepository.findNext(id);
-        }
-    }
+//  public List<Board> getBoardList(int pag, int pageSize, String search, String searchString) {
+//    PageRequest pageable = PageRequest.of(pag, pageSize, Sort.by("id").descending());
+//    Page<Board> boardPage;
+//
+//    if(search != null && !search.isEmpty()) boardPage = boardRepository.findByTitleContaining(search, pageable);
+//    else boardPage = boardRepository.findAll(pageable);
+//
+//    List<Board> boardList = boardPage.getContent();
+//    boardList.forEach((board) -> {
+//      board.setHourDiff(Duration.between(board.getWDate(), LocalDateTime.now()).toHours());
+//      board.setReplyCnt(board.getBoardReplies().size());
+//    });
+//
+//    System.out.println("전체게시물개수 : " + boardPage.getTotalElements());
+//    System.out.println("전체페이지개수 : " + boardPage.getTotalPages());
+//    System.out.println("페이지당 보여줄 게시물 개수 : " + boardPage.getSize());
+//    System.out.println("현재 페이지 번호 : " + boardPage.getNumber());
+//    System.out.println("이전페이지 존재여부 : " + boardPage.hasPrevious());
+//    System.out.println("다음페이지 존재여부 : " + boardPage.hasNext());
+//
+//
+//    return boardList;
+//  }
 
-    public List<BoardReply> getBoardReply(Long boardId) {
-        return boardReplyRepository.findByBoardIdOrderById(boardId);
-    }
-
-
-    @Transactional
-    public void setBoardUpdate(Long id, BoardDto dto) {
-        Board board = boardRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("해당 게시물을 찾을 수 없습니다."));
-
-        board.setTitle(dto.getTitle());
-        board.setContent(dto.getContent());
-
-
-    }
-
-    public void getDeleteBoard(Long id) {
-        Board board = boardRepository.findById(id).orElseThrow(()->new IllegalArgumentException("삭제할 게시물을 찾을 수 없습니다."));
-        boardRepository.delete(board);
-    }
+//  public long getTotRecCnt() {
+//    return boardRepository.count();
+//  }
 }
